@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuminaCraft Texture Maker (16x16)</title>
+    <style>
+        :root {
+            --bg-color: #18181b;
+            --panel-bg: #27272a;
+            --border-color: #3f3f46;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-color: #f4f4f5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            display: flex;
+            gap: 24px;
+            max-width: 1200px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        /* --- Canvas Section --- */
+        .editor-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        button.tool-btn {
+            background: #3f3f46;
+            color: #fff;
+            border: 1px solid #52525b;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.15s ease;
+        }
+
+        button.tool-btn:hover {
+            background: #52525b;
+        }
+
+        button.tool-btn.active {
+            background: var(--accent-color);
+            border-color: #60a5fa;
+        }
+
+        .grid-container {
+            position: relative;
+            width: 480px;
+            height: 480px;
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            grid-template-rows: repeat(16, 1fr);
+            background-color: #121214;
+            background-image: 
+                linear-gradient(45deg, #1e1e24 25%, transparent 25%), 
+                linear-gradient(-45deg, #1e1e24 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #1e1e24 75%), 
+                linear-gradient(-45deg, transparent 75%, #1e1e24 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            cursor: crosshair;
+        }
+
+        .pixel {
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- Controls Section --- */
+        .controls-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 320px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .current-color-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .color-preview {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            border: 2px solid #52525b;
+            background-color: #78471c;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: 2px solid #52525b;
+            border-radius: 8px;
+        }
+
+        .palette-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 5px;
+        }
+
+        .swatch {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+
+        .swatch:hover {
+            transform: scale(1.15);
+            z-index: 2;
+            border: 1px solid #fff;
+        }
+
+        /* --- Code Output Section --- */
+        .code-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        textarea {
+            width: 100%;
+            height: 240px;
+            background: #121214;
+            color: #4ade80;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+            user-select: text;
+            white-space: pre;
+            line-height: 1.4;
+        }
+
+        button.primary-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.15s;
+        }
+
+        button.primary-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .preview-box {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            padding: 10px;
+            background: #18181b;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        canvas.pixel-preview {
+            image-rendering: pixelated;
+            background: #00000044;
+            border: 1px solid #3f3f46;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Editor Canvas -->
+    <div class="panel editor-section">
+        <div class="toolbar">
+            <button class="tool-btn active" id="tool-brush">✏️ Кисть</button>
+            <button class="tool-btn" id="tool-picker">💧 Пипетка</button>
+            <button class="tool-btn" id="tool-eraser">🧹 Ластик</button>
+            <button class="tool-btn" id="tool-clear">🗑️ Очистить</button>
+        </div>
+
+        <div class="grid-container" id="grid"></div>
+    </div>
+
+    <!-- Controls, Tools & Palettes -->
+    <div class="panel controls-section">
+        <div>
+            <div class="section-title">Текущий цвет</div>
+            <div class="current-color-wrapper">
+                <div class="color-preview" id="color-preview"></div>
+                <input type="color" id="native-color" value="#804c1e">
+                <span id="color-hex" style="font-family: monospace; font-size: 14px;">#804c1e</span>
+            </div>
+        </div>
+
+        <div class="preview-box">
+            <canvas id="preview-16" class="pixel-preview" width="16" height="16" style="width: 32px; height: 32px;"></canvas>
+            <canvas id="preview-64" class="pixel-preview" width="16" height="16" style="width: 64px; height: 64px;"></canvas>
+            <div style="font-size: 12px; color: #a1a1aa;">Предпросмотр<br>1x и 4x</div>
+        </div>
+
+        <div>
+            <div class="section-title">Палитры Minecraft</div>
+            
+            <div class="palette-group">
+                <span style="font-size: 11px; color: #71717a;">Дерево & Черенок</span>
+                <div class="palette-grid" id="pal-wood"></div>
+            </div>
+
+            <div class="palette-group">
+                <span style="font-size: 11px; color: #71717a;">Камень, Железо & Металл</span>
+                <div class="palette-grid" id="pal-stone"></div>
+            </div>
+
+            <div class="palette-group">
+                <span style="font-size: 11px; color: #71717a;">Земля & Растения</span>
+                <div class="palette-grid" id="pal-nature"></div>
+            </div>
+
+            <div class="palette-group">
+                <span style="font-size: 11px; color: #71717a;">Золото & Алмаз</span>
+                <div class="palette-grid" id="pal-ore"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Generation Output -->
+    <div class="panel code-section">
+        <div class="code-header">
+            <div class="section-title" style="margin: 0;">Код для TextureGenerator.js</div>
+            <button class="primary-btn" id="copy-btn">📋 Скопировать код</button>
+        </div>
+        <textarea id="code-output" readonly></textarea>
+    </div>
+</div>
+
+<script>
+    const GRID_SIZE = 16;
+    const gridEl = document.getElementById('grid');
+    const colorPicker = document.getElementById('native-color');
+    const colorPreview = document.getElementById('color-preview');
+    const colorHexText = document.getElementById('color-hex');
+    const codeOutput = document.getElementById('code-output');
+    const copyBtn = document.getElementById('copy-btn');
+    const prev16 = document.getElementById('preview-16').getContext('2d');
+    const prev64 = document.getElementById('preview-64').getContext('2d');
+
+    let currentColor = '#804c1e';
+    let currentTool = 'brush'; // 'brush' | 'picker' | 'eraser'
+    let isDrawing = false;
+    let pixels = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
+
+    // Наборы цветов Minecraft
+    const PALETTES = {
+        wood: ['#2b1607', '#3d220a', '#4d2b0e', '#5c3512', '#754418', '#804c1e', '#9a6027', '#c79c65'],
+        stone: ['#1b1c20', '#242528', '#2e3036', '#383b42', '#454850', '#686c78', '#b0b8cc', '#ffffff'],
+        nature: ['#153b0a', '#1e521b', '#2a6917', '#429e24', '#5ecc34', '#8cf54e', '#59381f', '#d4b779'],
+        ore: ['#e5b025', '#f8d957', '#fff8a8', '#2c8f8b', '#4dede2', '#a8ffff', '#d13838', '#9e25d4']
+    };
+
+    // Создание палитр
+    function initPalettes() {
+        for (const [key, colors] of Object.entries(PALETTES)) {
+            const container = document.getElementById(`pal-${key}`);
+            colors.forEach(col => {
+                const swatch = document.createElement('div');
+                swatch.className = 'swatch';
+                swatch.style.backgroundColor = col;
+                swatch.onclick = () => setColor(col);
+                container.appendChild(swatch);
+            });
+        }
+    }
+
+    function setColor(hex) {
+        currentColor = hex;
+        colorPicker.value = hex;
+        colorPreview.style.backgroundColor = hex;
+        colorHexText.textContent = hex;
+        if (currentTool === 'eraser' || currentTool === 'picker') {
+            setTool('brush');
+        }
+    }
+
+    function setTool(tool) {
+        currentTool = tool;
+        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+        if (tool === 'brush') document.getElementById('tool-brush').classList.add('active');
+        if (tool === 'picker') document.getElementById('tool-picker').classList.add('active');
+        if (tool === 'eraser') document.getElementById('tool-eraser').classList.add('active');
+    }
+
+    // Создание сетки 16x16
+    function initGrid() {
+        gridEl.innerHTML = '';
+        for (let y = 0; y < GRID_SIZE; y++) {
+            for (let x = 0; x < GRID_SIZE; x++) {
+                const cell = document.createElement('div');
+                cell.className = 'pixel';
+                cell.dataset.x = x;
+                cell.dataset.y = y;
+
+                cell.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    isDrawing = true;
+                    applyTool(x, y);
+                });
+
+                cell.addEventListener('mouseenter', () => {
+                    if (isDrawing) applyTool(x, y);
+                });
+
+                gridEl.appendChild(cell);
+            }
+        }
+    }
+
+    function applyTool(x, y) {
+        if (currentTool === 'picker') {
+            const pickedColor = pixels[y][x];
+            if (pickedColor) {
+                setColor(pickedColor);
+            }
+            setTool('brush');
+            return;
+        }
+
+        const color = (currentTool === 'eraser') ? null : currentColor;
+        pixels[y][x] = color;
+        
+        const cell = gridEl.children[y * GRID_SIZE + x];
+        cell.style.backgroundColor = color || 'transparent';
+
+        updatePreviews();
+        generateCode();
+    }
+
+    window.addEventListener('mouseup', () => isDrawing = false);
+
+    function updatePreviews() {
+        prev16.clearRect(0, 0, 16, 16);
+        prev64.clearRect(0, 0, 16, 16);
+        for (let y = 0; y < GRID_SIZE; y++) {
+            for (let x = 0; x < GRID_SIZE; x++) {
+                if (pixels[y][x]) {
+                    prev16.fillStyle = pixels[y][x];
+                    prev16.fillRect(x, y, 1, 1);
+                    prev64.fillStyle = pixels[y][x];
+                    prev64.fillRect(x, y, 1, 1);
+                }
+            }
+        }
+    }
+
+    // Генерация массива строк и объекта палитры
+    function generateCode() {
+        const charSet = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%&*";
+        const colorToChar = {};
+        const charToColor = {};
+        let charIndex = 0;
+
+        // Собираем уникальные цвета
+        for (let y = 0; y < GRID_SIZE; y++) {
+            for (let x = 0; x < GRID_SIZE; x++) {
+                const col = pixels[y][x];
+                if (col && !colorToChar[col]) {
+                    const char = charSet[charIndex++];
+                    colorToChar[col] = char;
+                    charToColor[char] = col;
+                }
+            }
+        }
+
+        // Формируем 16 строк
+        const rows = [];
+        for (let y = 0; y < GRID_SIZE; y++) {
+            let rowStr = "";
+            for (let x = 0; x < GRID_SIZE; x++) {
+                const col = pixels[y][x];
+                rowStr += col ? colorToChar[col] : " ";
+            }
+            rows.push(`    "${rowStr}"`);
+        }
+
+        // Формируем палитру
+        const palEntries = Object.entries(charToColor)
+            .map(([char, col]) => `    '${char}': '${col}'`)
+            .join(',\n');
+
+        const finalCode = `this.paint(ctx, [\n${rows.join(',\n')}\n], {\n${palEntries}\n});`;
+        codeOutput.value = finalCode;
+    }
+
+    // Слушатели кнопок управления
+    document.getElementById('tool-brush').onclick = () => setTool('brush');
+    document.getElementById('tool-picker').onclick = () => setTool('picker');
+    document.getElementById('tool-eraser').onclick = () => setTool('eraser');
+
+    document.getElementById('tool-clear').onclick = () => {
+        if (confirm("Очистить поле?")) {
+            pixels = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
+            document.querySelectorAll('.pixel').forEach(el => el.style.backgroundColor = 'transparent');
+            updatePreviews();
+            generateCode();
+        }
+    };
+
+    colorPicker.oninput = (e) => setColor(e.target.value);
+
+    copyBtn.onclick = () => {
+        codeOutput.select();
+        navigator.clipboard.writeText(codeOutput.value);
+        copyBtn.textContent = '✅ Скопировано!';
+        setTimeout(() => copyBtn.textContent = '📋 Скопировать код', 2000);
+    };
+
+    // Инициализация
+    initPalettes();
+    initGrid();
+    setColor('#804c1e');
+    generateCode();
+</script>
+</body>
+</html>
