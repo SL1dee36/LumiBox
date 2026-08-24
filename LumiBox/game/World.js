@@ -579,22 +579,12 @@ export class World {
     }
 
     initMaterials() {
-        this.atlas = new TextureAtlas(16, 256);
-        for (const k in BLOCK.properties) {
-            const p = BLOCK.properties[k];
-            if (!p.texture || Number(k) === BLOCK.WATER) continue;
-            const arr = typeof p.texture === 'object'
-                ? [p.texture.top, p.texture.bottom, p.texture.side, p.texture.front].filter(Boolean)
-                : [p.texture];
-            arr.forEach(genKey => {
-                const cleanName = genKey.replace('gen:', '');
-                const canvas = this.textureGenerator.getCanvas(cleanName);
-                this.atlas.registerTexture(cleanName, canvas);
-            });
+        if (!this.atlas) {
+            this.atlas = new TextureAtlas(16, 256);
         }
         this.atlasTexture = this.atlas.buildTexture();
 
-        // 1. Непрозрачные блоки, листва, стекла, инструменты и растения
+        // 1. Непрозрачные блоки, листва, стекла и растительность
         const opaqueMaterial = new THREE.MeshLambertMaterial({
             map: this.atlasTexture,
             transparent: false,
@@ -636,7 +626,7 @@ export class World {
         };
 
         // 2. Полупрозрачная вода
-        this.waterTexture = this.textureGenerator.generate('gen:water');
+        this.waterTexture = this.textureGenerator.generate('water');
         this.waterTexture.wrapS = THREE.RepeatWrapping;
         this.waterTexture.wrapT = THREE.RepeatWrapping;
 
@@ -654,7 +644,6 @@ export class World {
 
     reloadMaterials() {
         this.initMaterials();
-        // Переназначаем материалы всем существующим мешам секций
         for (const k in this.regions) {
             const region = this.regions[k];
             for (let i = 0; i < region.sections.length; i++) {

@@ -19,6 +19,7 @@ import { SoundManager } from '../../game/SoundManager.js';
 import { TouchControls } from '../../game/TouchControls.js';
 import { PlayerHand } from '../../game/PlayerHand.js';
 import { ResourcePackLoader } from '../../game/ResourcePackLoader.js';
+import { ModuleManager } from '../../game/ModuleManager.js';
 
 function main() {
     const engine = new Engine('game-canvas');
@@ -119,14 +120,14 @@ function main() {
         });
     }
 
-    worldPlayBtn.onclick = () => {
+    worldPlayBtn.onclick = async () => {
         if (!selectedWorldId) return;
         const list = saveManager.getWorldsList();
         const meta = list.find(w => w.id === selectedWorldId);
         if (!meta) return;
 
         const data = saveManager.loadWorld(selectedWorldId);
-        startGame(meta, data);
+        await startGame(meta, data);
     };
 
     worldCreateBtn.onclick = () => {
@@ -155,11 +156,11 @@ function main() {
         newWorldModeBtn.textContent = newWorldGameMode === 'creative' ? 'Mode: Creative' : 'Mode: Survival';
     };
 
-    createWorldConfirmBtn.onclick = () => {
+    createWorldConfirmBtn.onclick = async () => {
         const name = newWorldNameInput.value.trim() || 'New World';
         const seedStr = newWorldSeedInput.value.trim();
         const meta = saveManager.createWorld(name, seedStr, newWorldGameMode);
-        startGame(meta, null);
+        await startGame(meta, null);
     };
 
     createWorldCancelBtn.onclick = () => {
@@ -168,13 +169,19 @@ function main() {
     };
 
     // 4. Запуск игрового мира
-    function startGame(worldMeta, saveData) {
+    async function startGame(worldMeta, saveData) {
         activeWorldMeta = worldMeta;
         uiManager.closeAllMenus();
 
         if (soundManager.ctx.state === 'suspended') soundManager.ctx.resume();
 
         const world = new World(engine.renderer.scene, worldMeta.seed, engine.renderer.renderer, settingsManager);
+        
+        // --- Загрузка модулей .lumibench (source и подключенных модов) ---
+        const moduleManager = new ModuleManager(world.atlas, world.textureGenerator);
+        await moduleManager.loadModules(['source']);
+        world.reloadMaterials();
+
         engine.physicsEngine.setWorld(world);
 
         if (saveData && saveData.world) {

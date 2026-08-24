@@ -1,7 +1,4 @@
 // game/blocks.js
-// author: Nazaryan A.K.
-// github: @Sl1dee36
-
 export const BLOCK = {
     AIR: 0,
     BEDROCK: 1,
@@ -21,17 +18,13 @@ export const BLOCK = {
     SANDSTONE: 15,
     CRAFTING_TABLE: 16,
     FURNACE: 17,
-    
-    // Растительность (Растения)
     TALL_GRASS: 18,
     DOUBLE_TALL_GRASS_BOTTOM: 19,
     DOUBLE_TALL_GRASS_TOP: 20,
 
-    // Предметы / Инструменты
     COAL: 100,
     IRON_INGOT: 101,
     STICK: 102,
-
     WOODEN_PICKAXE: 200,
     WOODEN_AXE: 201,
     WOODEN_SHOVEL: 202,
@@ -44,45 +37,21 @@ export const BLOCK = {
 
     properties: {
         0: { name: 'air', isTransparent: true, isSolid: false },
-        1: { name: 'bedrock', isBreakable: false, isSolid: true, isTransparent: false, texture: 'gen:bedrock' },
-        2: { name: 'stone', isSolid: true, isTransparent: false, texture: 'gen:stone', drop: 3 },
-        3: { name: 'cobblestone', isSolid: true, isTransparent: false, texture: 'gen:cobblestone' },
-        4: { name: 'dirt', isSolid: true, isTransparent: false, texture: 'gen:dirt' },
-        5: { name: 'grass', isSolid: true, isTransparent: false, texture: { top: 'gen:grass_top', bottom: 'gen:dirt', side: 'gen:grass_side' }, drop: 4 },
-        6: { name: 'oak_log', isSolid: true, isTransparent: false, texture: { top: 'gen:log_top', bottom: 'gen:log_top', side: 'gen:log_side' } },
-        7: { name: 'oak_leaves', isTransparent: true, isSolid: true, texture: 'gen:leaves' },
-        8: { name: 'coal_ore', isSolid: true, isTransparent: false, texture: 'gen:coal_ore', drop: 100 },
-        9: { name: 'iron_ore', isSolid: true, isTransparent: false, texture: 'gen:iron_ore', drop: 9 },
-        10: { name: 'glass', isTransparent: true, isSolid: true, texture: 'gen:glass', isBreakable: true, drop: 0 },
-        11: { name: 'planks', isSolid: true, isTransparent: false, texture: 'gen:planks' },
-        12: { name: 'sand', isSolid: true, isTransparent: false, texture: 'gen:sand', falling: true },
-        13: { name: 'water', isTransparent: true, isSolid: false, texture: 'gen:water' },
-        14: { name: 'gravel', isSolid: true, isTransparent: false, texture: 'gen:gravel', falling: true },
-        15: { name: 'sandstone', isSolid: true, isTransparent: false, texture: { top: 'gen:sandstone_top', bottom: 'gen:sandstone_bottom', side: 'gen:sandstone_side' } },
-        16: { name: 'crafting_table', isSolid: true, isTransparent: false, texture: { top: 'gen:crafting_table_top', bottom: 'gen:planks', side: 'gen:crafting_table_side', front: 'gen:crafting_table_front' } },
-        17: { name: 'furnace', isSolid: true, isTransparent: false, texture: { top: 'gen:furnace_top', bottom: 'gen:cobblestone', side: 'gen:furnace_side', front: 'gen:furnace_front' } },
-
-        // Растительность
-        18: { name: 'tall_grass', isPlant: true, isSolid: false, isTransparent: true, texture: 'gen:tall_grass', drop: 0 },
-        19: { name: 'double_tall_grass_bottom', isPlant: true, isSolid: false, isTransparent: true, texture: 'gen:double_grass_bottom', drop: 0 },
-        20: { name: 'double_tall_grass_top', isPlant: true, isSolid: false, isTransparent: true, texture: 'gen:double_grass_top', drop: 0 },
-
-        // Предметы
-        100: { name: 'coal', isItem: true, texture: 'gen:item_coal' },
-        101: { name: 'iron_ingot', isItem: true, texture: 'gen:item_iron_ingot' },
-        102: { name: 'stick', isItem: true, texture: 'gen:item_stick' },
-
-        // Инструменты
-        200: { name: 'wooden_pickaxe', isItem: true, texture: 'gen:tool_wood_pick' },
-        201: { name: 'wooden_axe', isItem: true, texture: 'gen:tool_wood_axe' },
-        202: { name: 'wooden_shovel', isItem: true, texture: 'gen:tool_wood_shovel' },
-        203: { name: 'stone_pickaxe', isItem: true, texture: 'gen:tool_stone_pick' },
-        204: { name: 'stone_axe', isItem: true, texture: 'gen:tool_stone_axe' },
-        205: { name: 'stone_shovel', isItem: true, texture: 'gen:tool_stone_shovel' },
-        206: { name: 'iron_pickaxe', isItem: true, texture: 'gen:tool_iron_pick' },
-        207: { name: 'iron_axe', isItem: true, texture: 'gen:tool_iron_axe' },
-        208: { name: 'iron_shovel', isItem: true, texture: 'gen:tool_iron_shovel' }
+        13: { name: 'water', isTransparent: true, isSolid: false, texture: 'gen:water' }
     },
+
+    nextDynamicId: 300,
+
+    register(def) {
+        let id = def.id;
+        if (!id) {
+            id = this.nextDynamicId++;
+        }
+        this[def.name.toUpperCase()] = id;
+        this.properties[id] = { ...def, id };
+        return id;
+    },
+
     get(id) {
         return this.properties[id] || { isSolid: false, isTransparent: true };
     }

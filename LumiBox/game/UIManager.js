@@ -359,11 +359,18 @@ export class UIManager {
     getBlockIconUrl(blockId) {
         if (this.iconCache[blockId]) return this.iconCache[blockId];
         const p = BLOCK.get(blockId);
+        if (!p) return '';
+
         let texKey = '';
-        if (typeof p.texture === 'object') texKey = p.texture.front || p.texture.side;
-        else texKey = p.texture;
+        if (typeof p.texture === 'object' && p.texture !== null) {
+            texKey = p.texture.front || p.texture.side || p.texture.top;
+        } else {
+            texKey = p.texture;
+        }
         if (!texKey) return '';
-        const texture = this.texGen.generate(texKey);
+
+        const texGen = (this.inventoryComponent?.gameObject?.engine?.physicsEngine?.world?.textureGenerator) || this.texGen;
+        const texture = texGen.generate(texKey);
         const dataUrl = texture.image.toDataURL();
         this.iconCache[blockId] = dataUrl;
         return dataUrl;

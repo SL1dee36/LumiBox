@@ -8,122 +8,7 @@ import { Inventory } from './Inventory.js';
 import { RigidBody } from '../Lumina/js/physics/RigidBody.js';
 import { BlockInteraction } from './BlockInteraction.js';
 import * as THREE from 'three';
-import { TextureGenerator } from './TextureGenerator.js';
-
-const itemGeoCache = {};
-
-function getOrCreateItem3DGeometry(canvas, size = 0.5, thickness = 0.5 / 16) {
-    if (!canvas) return new THREE.BoxGeometry(size, size, thickness);
-
-    const cacheKey = `${canvas.width}_${canvas.height}_${canvas.toDataURL().length}`;
-    if (itemGeoCache[cacheKey]) {
-        return itemGeoCache[cacheKey];
-    }
-
-    const ctx = canvas.getContext('2d');
-    const imgData = ctx.getImageData(0, 0, 16, 16).data;
-    const isSolid = (x, y) => {
-        if (x < 0 || x >= 16 || y < 0 || y >= 16) return false;
-        return imgData[(y * 16 + x) * 4 + 3] > 20;
-    };
-
-    const positions = [];
-    const normals = [];
-    const uvs = [];
-
-    const pw = size / 16;
-    const ph = size / 16;
-    const halfD = thickness / 2;
-
-    const addQuad = (p1, p2, p3, p4, norm, uvCoords) => {
-        // Треугольник 1
-        positions.push(...p1, ...p2, ...p3);
-        normals.push(...norm, ...norm, ...norm);
-        uvs.push(uvCoords[0], uvCoords[1], uvCoords[2], uvCoords[3], uvCoords[4], uvCoords[5]);
-
-        // Треугольник 2
-        positions.push(...p1, ...p3, ...p4);
-        normals.push(...norm, ...norm, ...norm);
-        uvs.push(uvCoords[0], uvCoords[1], uvCoords[4], uvCoords[5], uvCoords[6], uvCoords[7]);
-    };
-
-    for (let y = 0; y < 16; y++) {
-        for (let x = 0; x < 16; x++) {
-            if (!isSolid(x, y)) continue;
-
-            const x0 = (x - 8) * pw;
-            const x1 = x0 + pw;
-            const y1 = (8 - y) * ph;
-            const y0 = y1 - ph;
-
-            // UV с небольшим отступом внутрь пикселя против артефактов фильтрации
-            const u0 = (x + 0.05) / 16;
-            const u1 = (x + 0.95) / 16;
-            const v1 = 1 - ((y + 0.05) / 16);
-            const v0 = 1 - ((y + 0.95) / 16);
-
-            const uvQuad = [u0, v0, u1, v0, u1, v1, u0, v1];
-
-            // 1. Передняя грань (+Z)
-            addQuad(
-                [x0, y0, halfD], [x1, y0, halfD], [x1, y1, halfD], [x0, y1, halfD],
-                [0, 0, 1],
-                uvQuad
-            );
-
-            // 2. Задняя грань (-Z)
-            addQuad(
-                [x1, y0, -halfD], [x0, y0, -halfD], [x0, y1, -halfD], [x1, y1, -halfD],
-                [0, 0, -1],
-                [u1, v0, u0, v0, u0, v1, u1, v1]
-            );
-
-            // 3. Верхний торец (+Y)
-            if (!isSolid(x, y - 1)) {
-                addQuad(
-                    [x0, y1, halfD], [x1, y1, halfD], [x1, y1, -halfD], [x0, y1, -halfD],
-                    [0, 1, 0],
-                    uvQuad
-                );
-            }
-
-            // 4. Нижний торец (-Y)
-            if (!isSolid(x, y + 1)) {
-                addQuad(
-                    [x0, y0, -halfD], [x1, y0, -halfD], [x1, y0, halfD], [x0, y0, halfD],
-                    [0, -1, 0],
-                    uvQuad
-                );
-            }
-
-            // 5. Левый торец (-X)
-            if (!isSolid(x - 1, y)) {
-                addQuad(
-                    [x0, y0, -halfD], [x0, y0, halfD], [x0, y1, halfD], [x0, y1, -halfD],
-                    [-1, 0, 0],
-                    uvQuad
-                );
-            }
-
-            // 6. Правый торец (+X)
-            if (!isSolid(x + 1, y)) {
-                addQuad(
-                    [x1, y0, halfD], [x1, y0, -halfD], [x1, y1, -halfD], [x1, y1, halfD],
-                    [1, 0, 0],
-                    uvQuad
-                );
-            }
-        }
-    }
-
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-
-    itemGeoCache[cacheKey] = geo;
-    return geo;
-}
+import { getOrCreateItem3DGeometry } from './utils/ItemGeometry.js';
 
 export class PlayerHand extends Component {
     constructor(gameObject, settingsManager) {
@@ -146,7 +31,7 @@ export class PlayerHand extends Component {
         this.basePos = { x: 0.4, y: -0.6, z: -0.8 };
         this.bobPos = new THREE.Vector3();
 
-        this.textureGenerator = new TextureGenerator();
+        this.textureGenerator = null;
         this.materialCache = {};
     }
 
@@ -155,6 +40,9 @@ export class PlayerHand extends Component {
         this.inventory = this.gameObject.getComponent(Inventory);
         this.rigidBody = this.gameObject.getComponent(RigidBody);
         this.blockInteraction = this.gameObject.getComponent(BlockInteraction);
+
+        this.textureGenerator = this.engine.physicsEngine.world.textureGenerator;
+
         this.camera.add(this.handContainer);
         this.updateMesh();
     }
@@ -164,7 +52,7 @@ export class PlayerHand extends Component {
         this.handContainer.visible = showHand;
         if (!showHand) return;
 
-        const selectedItem = this.inventory.getSelectedItem();
+        const selectedItem = this.inventory ? this.inventory.getSelectedItem() : null;
         const selectedId = selectedItem ? selectedItem.id : 0;
         if (selectedId !== this.currentBlockId) {
             this.currentBlockId = selectedId;
@@ -189,11 +77,11 @@ export class PlayerHand extends Component {
     }
 
     getItemMaterial(textureName) {
-        if (!textureName) return new THREE.MeshBasicMaterial({ color: 0xff00ff });
+        if (!textureName || !this.textureGenerator) return new THREE.MeshBasicMaterial({ color: 0xff00ff });
         const key = 'solid_item_' + textureName;
         if (!this.materialCache[key]) {
             const texture = this.textureGenerator.generate(textureName);
-            // Плотный непрозрачный материал с обязательной записью в буфер глубины
+            // Плотный материал: без DoubleSide и без артефактов полупрозрачности
             this.materialCache[key] = new THREE.MeshLambertMaterial({
                 map: texture,
                 transparent: false,
@@ -206,7 +94,7 @@ export class PlayerHand extends Component {
     }
 
     getBlockMaterial(textureName) {
-        if (!textureName) return new THREE.MeshBasicMaterial({ color: 0xff00ff });
+        if (!textureName || !this.textureGenerator) return new THREE.MeshBasicMaterial({ color: 0xff00ff });
         const key = 'block_' + textureName;
         if (!this.materialCache[key]) {
             const texture = this.textureGenerator.generate(textureName);
@@ -229,7 +117,7 @@ export class PlayerHand extends Component {
             if (obj.geometry) obj.geometry.dispose();
         }
 
-        // Рука игрока
+        // Рука игрока (отключен receiveShadow для предотвращения теневого шума)
         const armGroup = new THREE.Group();
         const armGeo = new THREE.BoxGeometry(0.25, 0.8, 0.25);
         const armMat = new THREE.MeshLambertMaterial({ color: 0xaa8866 });
@@ -238,13 +126,12 @@ export class PlayerHand extends Component {
         armMesh.rotation.x = -Math.PI / 8;
         armMesh.rotation.z = Math.PI / 16;
         armMesh.position.set(0.3, -0.2, 0.2);
-
-        armMesh.castShadow = true;
-        armMesh.receiveShadow = true;
+        armMesh.castShadow = false;
+        armMesh.receiveShadow = false;
         armGroup.add(armMesh);
 
         // Предмет / Блок в руке
-        if (this.currentBlockId !== 0) {
+        if (this.currentBlockId !== 0 && this.textureGenerator) {
             const props = BLOCK.get(this.currentBlockId);
 
             if (props.isItem) {
@@ -253,8 +140,9 @@ export class PlayerHand extends Component {
                 const item3DGeo = getOrCreateItem3DGeometry(canvas, 0.5, 0.5 / 16);
                 const itemMesh = new THREE.Mesh(item3DGeo, mat);
 
-                itemMesh.castShadow = true;
-                itemMesh.receiveShadow = true;
+                // Отключаем наложение теней внутри вьюмодели
+                itemMesh.castShadow = false;
+                itemMesh.receiveShadow = false;
                 armMesh.add(itemMesh);
 
                 itemMesh.position.set(-0.1, 0.5, 0.1);
@@ -266,9 +154,9 @@ export class PlayerHand extends Component {
                 const itemGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
                 let materials = [];
                 if (typeof props.texture === 'object') {
-                    const matSide = this.getBlockMaterial(props.texture.side);
+                    const matSide = this.getBlockMaterial(props.texture.side || props.texture.front);
                     const matTop = this.getBlockMaterial(props.texture.top);
-                    const matBottom = this.getBlockMaterial(props.texture.bottom);
+                    const matBottom = this.getBlockMaterial(props.texture.bottom || props.texture.top);
                     const matFront = props.texture.front ? this.getBlockMaterial(props.texture.front) : matSide;
                     materials = [matSide, matSide, matTop, matBottom, matFront, matSide];
                 } else {
@@ -276,8 +164,8 @@ export class PlayerHand extends Component {
                     materials = [mat, mat, mat, mat, mat, mat];
                 }
                 const itemMesh = new THREE.Mesh(itemGeo, materials);
-                itemMesh.castShadow = true;
-                itemMesh.receiveShadow = true;
+                itemMesh.castShadow = false;
+                itemMesh.receiveShadow = false;
                 armMesh.add(itemMesh);
                 itemMesh.position.set(-0.1, 0.4, 0.1);
                 itemMesh.rotation.y = Math.PI / 4;
@@ -288,10 +176,7 @@ export class PlayerHand extends Component {
     }
 
     applyAnimations(deltaTime) {
-        let rotX = 0;
-        let rotY = 0;
-        let animY = 0;
-        let animZ = 0;
+        let rotX = 0, rotY = 0, animY = 0, animZ = 0;
 
         const speed = this.rigidBody
             ? Math.sqrt(this.rigidBody.velocity.x ** 2 + this.rigidBody.velocity.z ** 2)
