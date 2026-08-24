@@ -466,6 +466,23 @@ class LumiBenchStudio {
         this.initPanelResizers();
         this.initContextMenuAndToasts();
         await this.loadInitialPack();
+        this.showMainMenu();
+    }
+
+    showMainMenu() {
+        const menu = document.getElementById('main-menu-overlay');
+        if (menu) {
+            menu.style.display = 'flex';
+            setTimeout(() => menu.style.opacity = '1', 10);
+        }
+    }
+
+    hideMainMenu() {
+        const menu = document.getElementById('main-menu-overlay');
+        if (menu) {
+            menu.style.opacity = '0';
+            setTimeout(() => menu.style.display = 'none', 300);
+        }
     }
 
     initPanelResizers() {
@@ -732,6 +749,7 @@ class LumiBenchStudio {
             const [tx, ty] = coords;
 
             for (let y = 0; y < 16; y++) {
+                if (!grid[y]) continue;
                 for (let x = 0; x < 16; x++) {
                     const color = grid[y][x];
                     if (color) {
@@ -866,12 +884,33 @@ class LumiBenchStudio {
         }
     }
 
+    saveCurrentStateToElement() {
+        if (this.activeElement) {
+            this.activeElement.modelCubes = this.cubes.map(c => ({
+                id: c.id,
+                name: c.name,
+                pos: [...c.pos],
+                size: [...c.size],
+                rot: [...c.rot],
+                textureMode: c.textureMode,
+                uniqueKeys: c.uniqueKeys ? JSON.parse(JSON.stringify(c.uniqueKeys)) : null
+            }));
+        }
+    }
+
     selectElement(el) {
+        this.saveCurrentStateToElement();
+
         this.activeElement = el;
         this.renderElementsList();
 
         const modelType = el.isPlant ? 'plant' : (el.isItem ? 'item' : 'cube');
-        this.resetToDefaultCube(modelType);
+
+        if (el.modelCubes && el.modelCubes.length > 0) {
+            this.restoreCubes(el.modelCubes);
+        } else {
+            this.resetToDefaultCube(modelType);
+        }
 
         const cleanMainKey = (typeof el.texture === 'object' ? (el.texture.front || el.texture.side) : el.texture).replace(/^source:/, '').replace(/^gen:/, '');
         this.getOrInitTextureGrid(cleanMainKey);
@@ -879,6 +918,22 @@ class LumiBenchStudio {
         this.selectCube(this.cubes[0] ? this.cubes[0].id : null);
         this.renderGrid();
         this.update3DTextures();
+    }
+
+    restoreCubes(cubesData) {
+        if (this.transformControls) this.transformControls.detach();
+        while (this.modelGroup.children.length > 0) {
+            const obj = this.modelGroup.children[0];
+            this.modelGroup.remove(obj);
+            if (obj.geometry) obj.geometry.dispose();
+        }
+        this.cubes = [];
+        
+        cubesData.forEach(data => {
+            this.addCubeData(data);
+        });
+        
+        this.renderCubeHierarchy();
     }
 
     init3D() {
@@ -1714,13 +1769,15 @@ class LumiBenchStudio {
             id: nextId,
             name: cleanName,
             isItem: true,
-            texture: `${this.activeModule.id}:${cleanName}`
+            texture: `${this.activeModule.id}:${cleanName}`,
+            modelCubes: []
         } : {
             id: nextId,
             name: cleanName,
             isSolid: true,
             isTransparent: false,
-            texture: `${this.activeModule.id}:${cleanName}`
+            texture: `${this.activeModule.id}:${cleanName}`,
+            modelCubes: []
         };
 
         if (isItem) {
@@ -1741,24 +1798,13 @@ class LumiBenchStudio {
             return;
         }
 
+        this.saveCurrentStateToElement();
         this.bakeAtlasAndManifest();
+        
         const zip = new JSZip();
         const modId = this.activeModule.id || 'source';
 
-        const exportData = {
-            ...this.activeModule,
-            cubes: this.cubes.map(c => ({
-                id: c.id,
-                name: c.name,
-                pos: c.pos,
-                size: c.size,
-                rot: c.rot,
-                textureMode: c.textureMode,
-                uniqueKeys: c.uniqueKeys
-            }))
-        };
-
-        zip.file(`${modId}.lumibench`, JSON.stringify(exportData, null, 2));
+        zip.file(`${modId}.lumibench`, JSON.stringify(this.activeModule, null, 2));
 
         const atlasBlob = await new Promise(resolve => this.atlasCanvas.toBlob(resolve, 'image/png'));
         zip.file(`${modId}-atlas.png`, atlasBlob);
@@ -1803,20 +1849,10 @@ class LumiBenchStudio {
 
             this.renderElementsList();
 
-            if (Array.isArray(modData.cubes) && modData.cubes.length > 0) {
-                while (this.modelGroup.children.length > 0) {
-                    const obj = this.modelGroup.children[0];
-                    this.modelGroup.remove(obj);
-                    if (obj.geometry) obj.geometry.dispose();
-                }
-                this.cubes = [];
-                modData.cubes.forEach(c => this.addCubeData(c));
-                this.selectCube(this.cubes[0].id);
-            } else {
-                const first = (modData.blocks && modData.blocks[0]) || (modData.items && modData.items[0]);
-                if (first) this.selectElement(first);
-            }
+            const first = (modData.blocks && modData.blocks[0]) || (modData.items && modData.items[0]);
+            if (first) this.selectElement(first);
 
+            this.hideMainMenu();
             this.showToast(`Модуль [${modData.name || modData.id}] загружен!`, 'success');
         } catch (e) {
             this.showToast('Ошибка импорта ZIP: ' + e.message, 'error');
@@ -1839,6 +1875,40 @@ class LumiBenchStudio {
     }
 
     initDOM() {
+        const btnNewMod = () => {
+            this.showConfirm('Новый модуль', 'Создать новый пустой модуль? Несохраненные изменения будут сброшены.', () => {
+                this.activeModule = {
+                    id: 'mod_' + Date.now(),
+                    name: 'New Custom Mod',
+                    version: '1.0.0',
+                    atlas: 'custom-atlas.png',
+                    tileSize: 16,
+                    atlasSize: 256,
+                    textures: { "custom_block": [0, 0] },
+                    blocks: [{ id: 300, name: 'custom_block', isSolid: true, isTransparent: false, texture: 'custom_block', modelCubes: [] }],
+                    items: [],
+                    recipes: { crafting: [], smelting: {}, fuels: {} }
+                };
+                this.atlasCtx.clearRect(0, 0, 256, 256);
+                this.textureGrids = {};
+                this.renderElementsList();
+                this.selectElement(this.activeModule.blocks[0]);
+                this.hideMainMenu();
+                this.showToast('Создан новый проект модуля', 'success');
+            });
+        };
+
+        const btnOpenZip = () => document.getElementById('file-project-input').click();
+
+        document.getElementById('btn-new-mod').onclick = btnNewMod;
+        document.getElementById('menu-btn-new').onclick = btnNewMod;
+        
+        document.getElementById('btn-open-zip').onclick = btnOpenZip;
+        document.getElementById('menu-btn-open').onclick = btnOpenZip;
+
+        document.getElementById('menu-btn-continue').onclick = () => this.hideMainMenu();
+        document.getElementById('header-logo-btn').onclick = () => this.showMainMenu();
+
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.onclick = () => {
                 document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -1936,6 +2006,7 @@ class LumiBenchStudio {
 
         document.getElementById('btn-export-zip').onclick = () => this.exportZipPackage();
         document.getElementById('btn-gen-source-pack').onclick = () => {
+            this.saveCurrentStateToElement();
             this.bakeAtlasAndManifest();
             this.exportZipPackage();
         };
@@ -1965,35 +2036,13 @@ class LumiBenchStudio {
                             this.activeModule = JSON.parse(evt.target.result);
                             this.renderElementsList();
                             if (this.activeModule.blocks[0]) this.selectElement(this.activeModule.blocks[0]);
+                            this.hideMainMenu();
                         };
                         r.readAsText(file);
                     }
                 }
             };
         }
-        document.getElementById('btn-open-zip').onclick = () => openInput.click();
-
-        document.getElementById('btn-new-mod').onclick = () => {
-            this.showConfirm('Новый модуль', 'Создать новый пустой модуль? Несохраненные изменения будут сброшены.', () => {
-                this.activeModule = {
-                    id: 'mod_' + Date.now(),
-                    name: 'New Custom Mod',
-                    version: '1.0.0',
-                    atlas: 'custom-atlas.png',
-                    tileSize: 16,
-                    atlasSize: 256,
-                    textures: { "custom_block": [0, 0] },
-                    blocks: [{ id: 300, name: 'custom_block', isSolid: true, isTransparent: false, texture: 'custom_block' }],
-                    items: [],
-                    recipes: { crafting: [], smelting: {}, fuels: {} }
-                };
-                this.atlasCtx.clearRect(0, 0, 256, 256);
-                this.textureGrids = {};
-                this.renderElementsList();
-                this.selectElement(this.activeModule.blocks[0]);
-                this.showToast('Создан новый проект модуля', 'success');
-            });
-        };
 
         window.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -2029,6 +2078,7 @@ class LumiBenchStudio {
     }
 
     openExportModal() {
+        this.saveCurrentStateToElement();
         this.bakeAtlasAndManifest();
         const modal = document.getElementById('export-modal');
         const codeArea = document.getElementById('modal-code-area');

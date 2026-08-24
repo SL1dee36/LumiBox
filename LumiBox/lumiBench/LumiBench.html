@@ -22,11 +22,46 @@
 </head>
 <body>
 
+    <!-- Main Menu (Blockbench Style) -->
+    <div class="main-menu-overlay" id="main-menu-overlay">
+        <div class="main-menu-sidebar">
+            <div class="logo-group">
+                <div>
+                    <span class="logo-box">LB</span>
+                    <span class="logo-title">LumiBench</span>
+                </div>
+                <span class="logo-ver">Studio v2.3</span>
+            </div>
+            <button class="menu-nav-btn active">🏠 Главная</button>
+            <button class="menu-nav-btn" onclick="alert('Настройки в разработке')">⚙️ Настройки</button>
+        </div>
+        <div class="main-menu-content">
+            <h1>Добро пожаловать</h1>
+            <div class="menu-cards-grid">
+                <div class="menu-card" id="menu-btn-new">
+                    <div class="menu-card-icon">📄</div>
+                    <h3>Новый проект</h3>
+                    <p>Создать новый пустой модуль для создания воксельных модов и текстур с нуля.</p>
+                </div>
+                <div class="menu-card" id="menu-btn-open">
+                    <div class="menu-card-icon">📂</div>
+                    <h3>Открыть проект</h3>
+                    <p>Загрузить ранее созданный .zip архив мода или файл манифеста .lumibench.</p>
+                </div>
+                <div class="menu-card" id="menu-btn-continue">
+                    <div class="menu-card-icon">🚀</div>
+                    <h3>Продолжить работу</h3>
+                    <p>Закрыть это меню и вернуться в текущее рабочее пространство.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Header Navigation -->
     <header class="app-header">
-        <div class="logo-group">
+        <div class="logo-group" id="header-logo-btn" title="В Главное меню">
             <span class="logo-box">LB</span>
-            <span class="logo-title">LumiBench <span class="logo-ver">Studio v2.2</span></span>
+            <span class="logo-title">LumiBench <span class="logo-ver">v2.2</span></span>
         </div>
 
         <div class="menu-bar">
@@ -35,15 +70,15 @@
             <input type="file" id="file-project-input" accept=".zip,.lumibench,.json" style="display: none;">
             <button class="nav-btn primary" id="btn-export-zip">📦 Скачать ZIP пакет</button>
             <div class="nav-divider"></div>
-            <button class="nav-btn" id="btn-gen-source-pack" title="Собрать все 38 канонических текстур игры">⚡ Собрать Source Pack</button>
-            <button class="nav-btn" id="btn-export-atlas-png">🖼️ Экспорт Атласа PNG</button>
-            <button class="nav-btn" id="btn-export-code">⚡ Экспорт кода</button>
+            <button class="nav-btn" id="btn-gen-source-pack" title="Собрать все 38 канонических текстур игры">⚡ Source Pack</button>
+            <button class="nav-btn" id="btn-export-atlas-png">🖼️ Экспорт PNG</button>
+            <button class="nav-btn" id="btn-export-code">⚡ Код</button>
         </div>
 
         <div class="view-mode-selector">
             <button class="mode-btn active" data-mode="split">🌓 Сплит</button>
-            <button class="mode-btn" data-mode="3d">🎲 3D Модель</button>
-            <button class="mode-btn" data-mode="2d">🎨 2D Текстуры</button>
+            <button class="mode-btn" data-mode="3d">🎲 3D</button>
+            <button class="mode-btn" data-mode="2d">🎨 2D</button>
         </div>
     </header>
 
@@ -84,20 +119,21 @@
         <main class="viewport-3d-container" id="container-3d">
             <!-- 3D Toolbar with Gizmo Controls -->
             <div class="viewport-toolbar">
-                <div style="display: flex; gap: 4px; background: rgba(0,0,0,0.4); padding: 2px; border-radius: 6px;">
+                <div class="tool-group">
                     <button class="tool-btn active" id="btn-gizmo-translate" title="Перемещение [W]">📍 Позиция</button>
                     <button class="tool-btn" id="btn-gizmo-scale" title="Растягивание / Сжатие [R]">📐 Размер</button>
                     <button class="tool-btn" id="btn-gizmo-rotate" title="Вращение [E]">🔄 Поворот</button>
                     <button class="tool-btn" id="btn-gizmo-off" title="Скрыть манипулятор [Esc]">✖</button>
                 </div>
-                <div class="nav-divider"></div>
-                <button class="tool-btn active" id="btn-view-textured">Текстуры</button>
-                <button class="tool-btn" id="btn-view-wireframe">Сетка</button>
-                <button class="tool-btn" id="btn-toggle-grid">Пол: ВКЛ</button>
-                <button class="tool-btn" id="btn-reset-cam">Сброс камеры</button>
+                <div class="tool-group">
+                    <button class="tool-btn active" id="btn-view-textured">Текстуры</button>
+                    <button class="tool-btn" id="btn-view-wireframe">Сетка</button>
+                    <button class="tool-btn" id="btn-toggle-grid">Пол: ВКЛ</button>
+                    <button class="tool-btn" id="btn-reset-cam">Сброс камеры</button>
+                </div>
             </div>
             <div id="threejs-canvas-host"></div>
-            <div class="hint-overlay">Гизмо: W (Перемещение) | R (Размер) | E (Вращение) | ПКМ по кубу: Контекстное меню</div>
+            <div class="hint-overlay">Гизмо: W (Двиг) | R (Масштаб) | E (Вращ) | ПКМ: Меню</div>
         </main>
 
         <!-- Resizer 2 -->
