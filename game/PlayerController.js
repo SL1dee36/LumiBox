@@ -2,8 +2,8 @@
 // author: Nazaryan A.K.
 // github: @Sl1dee36
 
-import { Component } from '../Lumina/js/core/Component.js';
-import { RigidBody } from '../Lumina/js/physics/RigidBody.js';
+import { Component } from '../lumina/core/Component.js';
+import { RigidBody } from '../lumina/physics/RigidBody.js';
 import * as THREE from 'three';
 
 export class PlayerController extends Component {

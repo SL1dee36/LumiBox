@@ -1,7 +1,7 @@
 // author: Nazaryan A.K. 
 // github: @Sl1dee36
 
-import { Component } from '../Lumina/js/core/Component.js';
+import { Component } from '../lumina/core/Component.js';
 import { BLOCK } from './blocks.js';
 import { RECIPES } from './Recipes.js';
 

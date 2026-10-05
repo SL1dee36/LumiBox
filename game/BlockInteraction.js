@@ -1,11 +1,11 @@
 // author: Nazaryan A.K. 
 // github: @Sl1dee36
 
-import { Component } from '../Lumina/js/core/Component.js';
+import { Component } from '../lumina/core/Component.js';
 import { Inventory } from './Inventory.js';
 import { BLOCK } from './blocks.js';
 import * as THREE from 'three';
-import { BoxCollider } from '../Lumina/js/physics/Colliders.js';
+import { BoxCollider } from '../lumina/physics/Colliders.js';
 
 export class BlockInteraction extends Component {
     constructor(gameObject, world, soundManager) {

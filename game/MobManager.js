@@ -3,7 +3,7 @@
 // github: @Sl1dee36
 
 import * as THREE from 'three';
-import { Component } from '../Lumina/js/core/Component.js';
+import { Component } from '../lumina/core/Component.js';
 import { Mob } from './Mob.js';
 import { BLOCK } from './blocks.js';
 
@@ -113,3 +113,4 @@ export class MobManager extends Component {
         return false;
     }
 }
+

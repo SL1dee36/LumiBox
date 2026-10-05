@@ -2,7 +2,7 @@
 // author: Nazaryan A.K.
 // github: @Sl1dee36
 
-import { Component } from '../Lumina/js/core/Component.js';
+import { Component } from '../lumina/core/Component.js';
 import * as THREE from 'three';
 
 export class DayNightCycle extends Component {

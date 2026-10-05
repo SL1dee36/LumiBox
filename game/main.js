@@ -1,27 +1,27 @@
-// Lumina/js/main.js
+// game/main.js
 // author: Nazaryan A.K.
 // github: @Sl1dee36
 
 import * as THREE from 'three';
-import { Engine } from './core/Engine.js';
-import { GameObject } from './core/GameObject.js';
-import { PlayerController } from '../../game/PlayerController.js';
-import { RigidBody } from './physics/RigidBody.js';
-import { BoxCollider } from './physics/Colliders.js';
-import { World } from '../../game/World.js';
-import { Inventory } from '../../game/Inventory.js';
-import { UIManager } from '../../game/UIManager.js';
-import { BlockInteraction } from '../../game/BlockInteraction.js';
-import { DayNightCycle } from '../../game/DayNightCycle.js';
-import { SaveManager } from '../../game/SaveManager.js';
-import { SettingsManager } from '../../game/SettingsManager.js';
-import { SoundManager } from '../../game/SoundManager.js';
-import { TouchControls } from '../../game/TouchControls.js';
-import { PlayerHand } from '../../game/PlayerHand.js';
-import { ResourcePackLoader } from '../../game/ResourcePackLoader.js';
-import { ModuleManager } from '../../game/ModuleManager.js';
-import { WeatherSystem } from '../../game/WeatherSystem.js';
-import { MobManager } from '../../game/MobManager.js';
+import { Engine } from '../lumina/core/Engine.js';
+import { GameObject } from '../lumina/core/GameObject.js';
+import { RigidBody } from '../lumina/physics/RigidBody.js';
+import { BoxCollider } from '../lumina/physics/Colliders.js';
+import { PlayerController } from './PlayerController.js';
+import { World } from './World.js';
+import { Inventory } from './Inventory.js';
+import { UIManager } from './UIManager.js';
+import { BlockInteraction } from './BlockInteraction.js';
+import { DayNightCycle } from './DayNightCycle.js';
+import { SaveManager } from './SaveManager.js';
+import { SettingsManager } from './SettingsManager.js';
+import { SoundManager } from './SoundManager.js';
+import { TouchControls } from './TouchControls.js';
+import { PlayerHand } from './PlayerHand.js';
+import { ResourcePackLoader } from './ResourcePackLoader.js';
+import { ModuleManager } from './ModuleManager.js';
+import { WeatherSystem } from './WeatherSystem.js';
+import { MobManager } from './MobManager.js';
 
 function main() {
     const engine = new Engine('game-canvas');
@@ -80,7 +80,7 @@ function main() {
     };
 
     menuQuitBtn.onclick = () => {
-        if (confirm("Close LuminaCraft?")) {
+        if (confirm("Close LumiBox?")) {
             window.close();
             document.body.innerHTML = "<div style='display:flex;justify-content:center;align-items:center;height:100vh;font-size:24px;'>Game Closed.</div>";
         }

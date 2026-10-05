@@ -3,7 +3,7 @@
 // github: @Sl1dee36
 
 import * as THREE from 'three';
-import { Component } from '../Lumina/js/core/Component.js';
+import { Component } from '../lumina/core/Component.js';
 import { BIOME } from './World.js';
 
 export class WeatherSystem extends Component {
@@ -176,3 +176,4 @@ export class WeatherSystem extends Component {
         }
     }
 }
+

@@ -2,10 +2,10 @@
 // author: Nazaryan A.K.
 // github: @Sl1dee36
 
-import { Component } from '../Lumina/js/core/Component.js';
+import { Component } from '../lumina/core/Component.js';
 import { BLOCK } from './blocks.js';
 import { Inventory } from './Inventory.js';
-import { RigidBody } from '../Lumina/js/physics/RigidBody.js';
+import { RigidBody } from '../lumina/physics/RigidBody.js';
 import { BlockInteraction } from './BlockInteraction.js';
 import * as THREE from 'three';
 import { getOrCreateItem3DGeometry } from './utils/ItemGeometry.js';
