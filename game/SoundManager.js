@@ -51,6 +51,19 @@ export class SoundManager {
         noise.start();
     }
 
+    play(type, ...args) {
+        if (!type) return;
+        const methodName = `play${type.charAt(0).toUpperCase() + type.slice(1)}`;
+        if (typeof this[methodName] === 'function') {
+            this[methodName](...args);
+        }
+    }
+
+    playHit() {
+        this.createNoise(0.08);
+        this.createOscillator('sawtooth', 140, this.ctx.currentTime, 0.09);
+    }
+
     playBreak(blockId) {
         this.createNoise(0.1); 
         this.createOscillator('square', 100, this.ctx.currentTime, 0.1);

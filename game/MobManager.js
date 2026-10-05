@@ -106,7 +106,13 @@ export class MobManager extends Component {
 
         if (closestMob) {
             closestMob.takeDamage(damage, origin);
-            if (this.soundManager) this.soundManager.play('hit');
+            if (this.soundManager) {
+                if (typeof this.soundManager.playHit === 'function') {
+                    this.soundManager.playHit();
+                } else if (typeof this.soundManager.play === 'function') {
+                    this.soundManager.play('hit');
+                }
+            }
             return true;
         }
 
